@@ -1,0 +1,4 @@
+file ./villager
+target remote localhost:1234
+b open
+c

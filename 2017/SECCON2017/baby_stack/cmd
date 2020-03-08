@@ -1,0 +1,4 @@
+file ./baby_stack
+target remote localhost:1234
+b *main.memcpy
+c

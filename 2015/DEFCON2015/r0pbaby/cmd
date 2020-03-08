@@ -1,0 +1,5 @@
+set disable-randomization off
+set follow-fork-mode child
+file ./r0pbaby
+target remote localhost:1235
+c

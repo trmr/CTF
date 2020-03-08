@@ -1,0 +1,4 @@
+$ file plain.txt
+plain.txt: ASCII text
+$ python cipher.py encrypt key plain.txt > encrypted.txt
+

@@ -1,0 +1,9 @@
+Plaintexts and the power consumption during the first encryption round are provided in two files:
+Line i of "traces.txt.bz2" contains the power consumption of the first AES round when encrypting line i of "plaintexts.txt.bz2" with the secret key.
+You are also provided with a (plaintext, ciphertext) pair so that you can check the correctness of your answer:
+
+Sample plaintext: 253  110  6  137  98  242  99  61  245  169  175  139  29  252  181  33  
+Sample ciphertext: 26  68  116  209  44  188  127  153  140  86  177  13  78  68  0  28  
+
+You also know that the leftmost byte of the key is zero.
+The flag is: SharifCTF{key} where "key" is the AES key in hexadecimal, without the 0x prefix. 
